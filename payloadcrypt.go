@@ -69,6 +69,9 @@ func (c *Crypt) Decrypt(payload []byte) ([]byte, error) {
 	iv := payload[:aes.BlockSize]
 	payload = payload[aes.BlockSize:]
 	payloadLength := len(payload) - c.hmac.Size()
+	if payloadLength <= 0 {
+		return nil, fmt.Errorf("payloadcrypt: invalid payload")
+	}
 	encryptedPayload := payload[:payloadLength]
 	sum := payload[payloadLength:]
 	// Check the HMAC
