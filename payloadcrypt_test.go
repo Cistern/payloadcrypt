@@ -10,7 +10,10 @@ func TestEncryptDecrypt(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	encrypted := c.Encrypt([]byte("some message"))
+	encrypted, err := c.Encrypt([]byte("some message"))
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	c2, err := NewCrypt([]byte("someKey"), []byte("someHMACKey"))
 	if err != nil {
@@ -25,7 +28,10 @@ func TestEncryptDecrypt(t *testing.T) {
 		t.Error("Did not decrypt what was encrypted")
 	}
 
-	encrypted = c.Encrypt([]byte("another message"))
+	encrypted, err = c.Encrypt([]byte("another message"))
+	if err != nil {
+		t.Error(err)
+	}
 	decrypted, err = c2.Decrypt(encrypted)
 	if err != nil {
 		t.Error(err)

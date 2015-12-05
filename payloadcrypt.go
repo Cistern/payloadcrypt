@@ -31,10 +31,6 @@ func NewCrypt(encryptionKey, hmacKey []byte) (*Crypt, error) {
 	if len(hmacKey) != 32 {
 		hmacKey = passphraseToKey(hmacKey)
 	}
-	iv := make([]byte, aes.BlockSize)
-	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-		return nil, err
-	}
 	block, err := aes.NewCipher(encryptionKey)
 	if err != nil {
 		return nil, err
@@ -42,14 +38,21 @@ func NewCrypt(encryptionKey, hmacKey []byte) (*Crypt, error) {
 	return &Crypt{
 		encryptionKey: encryptionKey,
 		hmacKey:       hmacKey,
-		iv:            iv,
+		iv:            nil,
 		block:         block,
 		hmac:          hmac.New(sha256.New, hmacKey),
 	}, nil
 }
 
 // Encrypt encrypts the given payload.
-func (c *Crypt) Encrypt(payload []byte) []byte {
+func (c *Crypt) Encrypt(payload []byte) ([]byte, error) {
+	if c.iv == nil {
+		// Initialize IV
+		c.iv = make([]byte, aes.BlockSize)
+		if _, err := io.ReadFull(rand.Reader, c.iv); err != nil {
+			return nil, fmt.Errorf("payloadcrypt: couldn't initialize IV: %v", err)
+		}
+	}
 	ciphertext := make([]byte, aes.BlockSize+len(payload))
 	copy(ciphertext[:aes.BlockSize], c.iv)
 	stream := cipher.NewCFBEncrypter(c.block, c.iv)
@@ -58,7 +61,7 @@ func (c *Crypt) Encrypt(payload []byte) []byte {
 	c.hmac.Reset()
 	c.hmac.Write(ciphertext)
 	sum := c.hmac.Sum(nil)
-	return append(ciphertext, sum...)
+	return append(ciphertext, sum...), nil
 }
 
 // Decrypt decrypts the given payload.
