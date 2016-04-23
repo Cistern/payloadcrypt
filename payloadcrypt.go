@@ -49,15 +49,19 @@ func (c *Crypt) Encrypt(payload []byte) ([]byte, error) {
 	if c.iv == nil {
 		// Initialize IV
 		c.iv = make([]byte, aes.BlockSize)
-		if _, err := io.ReadFull(rand.Reader, c.iv); err != nil {
-			return nil, fmt.Errorf("payloadcrypt: couldn't initialize IV: %v", err)
+		err := c.generateIV()
+		if err != nil {
+			return nil, err
 		}
 	}
 	ciphertext := make([]byte, aes.BlockSize+len(payload))
 	copy(ciphertext[:aes.BlockSize], c.iv)
 	stream := cipher.NewCFBEncrypter(c.block, c.iv)
 	stream.XORKeyStream(ciphertext[aes.BlockSize:], payload)
-	c.incIV()
+	err := c.generateIV()
+	if err != nil {
+		return nil, err
+	}
 	c.hmac.Reset()
 	c.hmac.Write(ciphertext)
 	sum := c.hmac.Sum(nil)
@@ -88,17 +92,12 @@ func (c *Crypt) Decrypt(payload []byte) ([]byte, error) {
 	return encryptedPayload, nil
 }
 
-func (c *Crypt) incIV() {
-	incBytes(c.iv)
-}
-
-func incBytes(b []byte) {
-	for i := 0; i < len(b); i++ {
-		b[i]++
-		if b[i] != 0 {
-			break
-		}
+func (c *Crypt) generateIV() error {
+	_, err := io.ReadFull(rand.Reader, c.iv)
+	if err != nil {
+		return fmt.Errorf("payloadcrypt: couldn't initialize IV: %v", err)
 	}
+	return nil
 }
 
 func passphraseToKey(passphrase []byte) []byte {

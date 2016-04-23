@@ -40,26 +40,3 @@ func TestEncryptDecrypt(t *testing.T) {
 		t.Error("Did not decrypt what was encrypted")
 	}
 }
-
-func TestIncBytes(t *testing.T) {
-	b := []byte{0, 1, 2, 3, 4, 5}
-	incBytes(b)
-	expected := []byte{1, 1, 2, 3, 4, 5}
-	if bytes.Compare(b, expected) != 0 {
-		t.Errorf("expected %v, got %v", expected, b)
-	}
-
-	b = []byte{255, 1, 2, 3, 4, 5}
-	incBytes(b)
-	expected = []byte{0, 2, 2, 3, 4, 5}
-	if bytes.Compare(b, expected) != 0 {
-		t.Errorf("expected %v, got %v", expected, b)
-	}
-
-	b = []byte{255, 255, 255, 255, 255, 255}
-	incBytes(b)
-	expected = []byte{0, 0, 0, 0, 0, 0}
-	if bytes.Compare(b, expected) != 0 {
-		t.Errorf("expected %v, got %v", expected, b)
-	}
-}
